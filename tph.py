@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import textwrap
 from collections import Counter, OrderedDict
 from datetime import date, timedelta
 
@@ -132,7 +133,6 @@ for route in results.values():
     headsigns_0.update(route['headsigns_0'].keys())
     headsigns_1.update(route['headsigns_1'].keys())
 
-import textwrap
 
 d0 = textwrap.fill("Direction 0 is: %s" % (", ".join(headsigns_0)), 170, subsequent_indent='    ')
 d1 = textwrap.fill("Direction 1 is: %s" % (", ".join(headsigns_1)), 170, subsequent_indent='    ')
