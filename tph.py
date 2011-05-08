@@ -32,11 +32,12 @@ target_stopid = "30374"
 
 #target_direction = "0"
 
-stops = schedule.GetStopList()
-for stop in stops:
-    if stop.stop_id == target_stopid:
-        target_stop = stop
-        break
+target_stop = get_stop_by_id(schedule, target_stopid)
+
+if target_stop.parent_station != '':
+    target_stop = get_stop_by_id(schedule, target_stop.parent_station)
+    
+target_stops = [target_stop] + get_childstops(schedule, target_stop)
 
 routes = schedule.GetRouteList()
 for route in routes:
@@ -61,12 +62,10 @@ for route in routes:
                     
                 stoptimes = trip.GetStopTimes()
                 for stoptime in stoptimes:
-                    if stoptime.stop != target_stop:
-                        continue
-                    else:
+                    if stoptime.stop in target_stops:
                         hour = stoptime.arrival_time.split(':')[0]
                         count[int(hour) % 24] += 1
-                        headsigns[trip.trip_headsign] += 1
+                        headsigns[trip.trip_headsign or stoptime.stop_headsign] += 1
                 #print trip
         results[route.route_id] = {'route_color': route.route_color,
                                    'headsigns_0': headsigns_0,
@@ -123,7 +122,8 @@ last_route_data = results.values()[-1]
 make_top_labels(last_route_data['plot_0'], ax, prev_0)
 make_top_labels(last_route_data['plot_1'], ax, prev_1)
 
-plt.legend([route_data['plot_0'][0] for route_data in results.values()], results.keys())
+plt.legend([route_data['plot_0'][0] for route_data in results.values()],
+           [get_name_for_route(schedule, route_id) for route_id in results.keys()])
 
 headsigns_0 = set()
 headsigns_1 = set()
