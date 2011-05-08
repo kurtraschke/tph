@@ -14,7 +14,7 @@ schedule = transitfeed.Schedule()
 
 schedule.Load("google_transit_cta")
 
-results = OrderedDict()
+results_temp = {}
 
 target_date = date(year=2011, month=5, day=6)
 periods = get_serviceperiod(schedule, target_date)
@@ -68,13 +68,19 @@ for route in routes:
                         count[int(hour) % 24] += 1
                         headsigns[trip.trip_headsign or stoptime.stop_headsign] += 1
                 #print trip
-        results[route.route_id] = {'route_color': route.route_color,
-                                   'headsigns_0': headsigns_0,
-                                   'count_0': count_0,
-                                   'bins_0': [count_0.get(x, 0) for x in range(0, 24)],
-                                   'headsigns_1': headsigns_1,
-                                   'count_1': count_1,
-                                   'bins_1': [count_1.get(x, 0) for x in range(0, 24)]}
+        results_temp[route.route_id] = {'route_color': route.route_color,
+                                        'headsigns_0': headsigns_0,
+                                        'count_0': count_0,
+                                        'bins_0': [count_0.get(x, 0) for x in range(0, 24)],
+                                        'headsigns_1': headsigns_1,
+                                        'count_1': count_1,
+                                        'bins_1': [count_1.get(x, 0) for x in range(0, 24)]}
+
+results = OrderedDict()
+
+for route_id in target_routes:
+    results[route_id] = results_temp[route_id]
+    
 
 
 print results
