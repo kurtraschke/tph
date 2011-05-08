@@ -1,8 +1,10 @@
 from collections import Counter
 import textwrap
 
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
+from matplotlib.figure import Figure
+
 
 def make_labels(rects, ax):
     for rect in rects:
@@ -30,7 +32,8 @@ def plot_service(results, target_stop_name, target_date, outfile):
     maxtph = 60 #TODO: set this automagically
     HOURS = 24
 
-    fig = plt.figure(figsize=(16,6), dpi=300)
+    fig = Figure(figsize=(16,6), dpi=300)
+    canvas = FigureCanvas(fig)
     ax = fig.add_subplot(111, xlim=(0,24), ylim=(0, maxtph))
     fig.subplots_adjust(bottom = 0.2, left=0.05, right=0.98)
     
@@ -51,16 +54,16 @@ def plot_service(results, target_stop_name, target_date, outfile):
     values_1 = np.array(np.zeros(HOURS))
 
     for route_id, route_data in results.items():
-        plt_args = {}
+        bar_args = {}
         if route_data['route_color'] != '':
-            plt_args['color'] = '#' + route_data['route_color']
+            bar_args['color'] = '#' + route_data['route_color']
         else:
-            plt_args['color'] = '#ffffff'
-        color_dups[plt_args['color']] += 1
-        if color_dups[plt_args['color']] > 1:
-            plt_args['hatch'] = hatch[color_dups[plt_args['color']] - 2]
-        route_data['plot_0'] = ax.bar(pos, route_data['bins_0'], width, bottom=values_0, **plt_args)
-        route_data['plot_1'] = ax.bar(pos+width, route_data['bins_1'], width, bottom=values_1, **plt_args)
+            bar_args['color'] = '#ffffff'
+        color_dups[bar_args['color']] += 1
+        if color_dups[bar_args['color']] > 1:
+            bar_args['hatch'] = hatch[color_dups[bar_args['color']] - 2]
+        route_data['plot_0'] = ax.bar(pos, route_data['bins_0'], width, bottom=values_0, **bar_args)
+        route_data['plot_1'] = ax.bar(pos+width, route_data['bins_1'], width, bottom=values_1, **bar_args)
 
         make_labels(route_data['plot_0'], ax)
         make_labels(route_data['plot_1'], ax)
@@ -73,7 +76,7 @@ def plot_service(results, target_stop_name, target_date, outfile):
     make_top_labels(last_route_data['plot_0'], ax, values_0)
     make_top_labels(last_route_data['plot_1'], ax, values_1)
 
-    plt.legend([route_data['plot_0'][0] for route_data in results.values()],
+    ax.legend([route_data['plot_0'][0] for route_data in results.values()],
                [route_data['route_name'] for route_data in results.values()])
 
     headsigns_0 = set()
@@ -86,6 +89,6 @@ def plot_service(results, target_stop_name, target_date, outfile):
     d0 = textwrap.fill("Direction 0 is: %s" % (", ".join(headsigns_0)), 170, subsequent_indent='    ')
     d1 = textwrap.fill("Direction 1 is: %s" % (", ".join(headsigns_1)), 170, subsequent_indent='    ')
 
-    plt.figtext(0.05, 0.05, d0+"\n"+d1, size="small")
+    fig.text(0.05, 0.05, d0+"\n"+d1, size="small")
 
-    plt.savefig(outfile)
+    fig.savefig(outfile, format='pdf')
