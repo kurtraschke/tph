@@ -8,7 +8,7 @@ import transitfeed
 import matplotlib.pyplot as plt
 import numpy as np
 
-from tools import make_labels, make_top_labels, get_serviceperiod
+from tools import make_labels, make_top_labels, get_serviceperiod, get_stop_by_id, get_childstops, get_name_for_route
 
 schedule = transitfeed.Schedule()
 
