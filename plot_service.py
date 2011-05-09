@@ -1,5 +1,6 @@
 from collections import Counter
 import textwrap
+import math
 
 import numpy as np
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
@@ -29,23 +30,15 @@ def make_top_labels(rects, ax, total):
 
 
 def plot_service(results, target_stop_name, target_date, outfile):
-    maxtph = 60 #TODO: set this automagically
     HOURS = 24
 
     fig = Figure(figsize=(16,6), dpi=300)
     canvas = FigureCanvas(fig)
-    ax = fig.add_subplot(111, xlim=(0,24), ylim=(0, maxtph))
+    ax = fig.add_subplot(111, xlim=(0,24))
     fig.subplots_adjust(bottom = 0.2, left=0.05, right=0.98)
-    
+
     pos = np.arange(HOURS)
     width = 0.40
-
-    ax.set_xlabel('Hour')
-    ax.set_ylabel('Vehicles per Hour')
-    ax.set_title('Service at %s on %s' % (target_stop_name, target_date.strftime("%Y-%m-%d")))
-    ax.set_yticks(np.arange(0, maxtph, 4))
-    ax.set_xticks(pos+width)
-    ax.set_xticklabels([str(i) for i in range(0, HOURS)])
 
     color_dups = Counter()
     hatch = ["/", "O", "x", "o", ".", "*"]
@@ -76,8 +69,17 @@ def plot_service(results, target_stop_name, target_date, outfile):
     make_top_labels(last_route_data['plot_0'], ax, values_0)
     make_top_labels(last_route_data['plot_1'], ax, values_1)
 
+    maxtph = (math.ceil(max(max(values_0), max(values_1))/10.0)*10) + 10
+
+    ax.set_ylim(0, maxtph)
+    ax.set_xlabel('Hour')
+    ax.set_ylabel('Vehicles per Hour')
+    ax.set_title('Service at %s on %s' % (target_stop_name, target_date.strftime("%Y-%m-%d")))
+    ax.set_yticks(np.arange(0, maxtph, 4))
+    ax.set_xticks(pos+width)
+    ax.set_xticklabels([str(i) for i in range(0, HOURS)])
     ax.legend([route_data['plot_0'][0] for route_data in results.values()],
-               [route_data['route_name'] for route_data in results.values()])
+              [route_data['route_name'] for route_data in results.values()])
 
     headsigns_0 = set()
     headsigns_1 = set()
