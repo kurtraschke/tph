@@ -10,9 +10,7 @@ from matplotlib.figure import Figure
 def make_labels(rects, ax):
     for rect in rects:
         height = int(rect.get_height())
-        if height == 0:
-            continue
-        elif (height >= 2):
+        if (height >= 2):
             bar_text = str(height)
             yloc = rect.get_y() + (rect.get_height() / 2.0)
             xloc = rect.get_x() + (rect.get_width() / 2.0)
