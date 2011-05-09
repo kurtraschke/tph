@@ -70,7 +70,7 @@ def plot_service(results, target_stop_name, target_date, outfile):
         make_top_labels(last_route_data['plot_0'], ax, values_0)
         make_top_labels(last_route_data['plot_1'], ax, values_1)
 
-    maxtph = (math.ceil(max(max(values_0), max(values_1))/10.0)*10) + 10
+    maxtph = (math.ceil(max(max(values_0), max(values_1))/10.0)*10) + 5
 
     ax.set_ylim(0, maxtph)
     ax.set_xlabel('Hour')
