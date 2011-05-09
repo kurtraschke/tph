@@ -23,7 +23,7 @@ def make_labels(rects, ax):
 def make_top_labels(rects, ax, total):
     for rect in rects:
         bar_text = int(total[int(rect.get_x())])
-        yloc = rect.get_y() + rect.get_height() + 0.5
+        yloc = rect.get_y() + rect.get_height() + 1
         xloc = rect.get_x() + (rect.get_width() / 2.0)
         ax.text(xloc, yloc, bar_text, horizontalalignment='center',
                  verticalalignment='center', color='black', weight='bold', size='x-small')
