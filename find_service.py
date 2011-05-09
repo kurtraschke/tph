@@ -2,6 +2,7 @@ from collections import Counter, OrderedDict
 
 from tools import get_serviceperiod, get_stop_by_id, get_childstops, get_name_for_route
 
+#TODO: it would be good to validate that the given stop and routes exist.
 
 def find_service(schedule, target_date, target_routes, target_stopid):
     periods = get_serviceperiod(schedule, target_date)
@@ -10,7 +11,7 @@ def find_service(schedule, target_date, target_routes, target_stopid):
 
     if target_stop.parent_station != '':
         target_stop = get_stop_by_id(schedule, target_stop.parent_station)
-    
+
     target_stops = [target_stop] + get_childstops(schedule, target_stop)
 
     results_temp = {}
@@ -30,7 +31,7 @@ def find_service(schedule, target_date, target_routes, target_stopid):
                     elif trip.direction_id == '1':
                         count = count_1
                         headsigns = headsigns_1
-                    
+
                     stoptimes = trip.GetStopTimes()
                     for stoptime in stoptimes:
                         if stoptime.stop in target_stops:

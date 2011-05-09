@@ -1,8 +1,6 @@
 from datetime import timedelta
 
 
-
-
 def get_serviceperiod(schedule, service_date):
     (result_date, periods) = schedule.GetServicePeriodsActiveEachDate(service_date, service_date+timedelta(days=1))[0]
     assert result_date == service_date
