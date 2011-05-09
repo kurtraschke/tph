@@ -65,9 +65,10 @@ def plot_service(results, target_stop_name, target_date, outfile):
         values_1 += np.array(route_data['bins_1'])
 
 
-    last_route_data = results.values()[-1]
-    make_top_labels(last_route_data['plot_0'], ax, values_0)
-    make_top_labels(last_route_data['plot_1'], ax, values_1)
+    if len(results) > 1:
+        last_route_data = results.values()[-1]
+        make_top_labels(last_route_data['plot_0'], ax, values_0)
+        make_top_labels(last_route_data['plot_1'], ax, values_1)
 
     maxtph = (math.ceil(max(max(values_0), max(values_1))/10.0)*10) + 10
 
