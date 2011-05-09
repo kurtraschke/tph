@@ -39,8 +39,9 @@ def find_service(schedule, target_date, target_routes, target_stopid):
     periods = get_serviceperiod(schedule, target_date)
 
     target_stop = get_stop_by_id(schedule, target_stopid)
+    assert target_stop is not None
 
-    if target_stop.parent_station != '':
+    if target_stop.parent_station and target_stop.parent_station != '':
         target_stop = get_stop_by_id(schedule, target_stop.parent_station)
 
     target_stops = [target_stop] + get_childstops(schedule, target_stop)
