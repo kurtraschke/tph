@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from datetime import date
-import pickle
+from datetime import datetime
+import ConfigParser
+import sys
 
 import transitfeed
 
@@ -9,29 +10,23 @@ from find_service import find_service
 from plot_service import plot_service
 
 
+config = ConfigParser.ConfigParser()
+config.read(sys.argv[1])
 
+default_target_date = datetime.strptime(config.get('config', 'target_date'), "%Y-%m-%d").date()
+gtfs_dir = config.get('config', 'gtfs_dir')
 
-target_date = date(year=2011, month=5, day=6)
-#target_routes = ['A', 'C', 'E']
-#target_stopid = "A27"
-#target_routes = ['A', 'B', 'C', 'D']
-#target_stopid = "A24"
-#target_routes = ['7','7X']
-#target_stopid = "723"
-target_routes = ['4', '5', '6', '6X']
-target_stopid = "631"
+schedule = transitfeed.Schedule()
+schedule.Load(gtfs_dir)
 
-#target_routes = ['Brn', 'P', 'Org', 'G', 'Pink']
-#target_stopid = "30074"
-
-
-"""schedule = transitfeed.Schedule()
-schedule.Load("../google_transit")
-(results, target_stop_name) = find_service(schedule, target_date, target_routes, target_stopid)
-pickle.dump((results, target_stop_name, target_date), open("servicedump", "w"))"""
-
-(results, target_stop_name, target_date) = pickle.load(open("servicedump"))
-
-print results
-
-plot_service(results, target_stop_name, target_date, "service.pdf")
+for section in config.sections():
+    if section != 'config':
+        if config.has_option(section, 'target_date'):
+            target_date = datetime.strptime(config.get(section, 'target_date'), "%Y-%m-%d").date()
+        else:
+            target_date = default_target_date
+        target_routes = config.get(section, 'target_routes').split(',')
+        target_stopid = config.get(section, 'target_stopid')
+        outfile = config.get(section, 'outfile')
+        (results, target_stop_name) = find_service(schedule, target_date, target_routes, target_stopid)
+        plot_service(results, target_stop_name, target_date, outfile)
