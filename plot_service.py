@@ -51,7 +51,8 @@ def plot_service(results, target_stop_name, target_date, outfile):
         if route_data['route_color'] != '':
             bar_args['color'] = '#' + route_data['route_color']
         else:
-            bar_args['color'] = '#ffffff'
+            bar_args['color'] = '#000000'
+            bar_args['edgecolor'] = '#ffffff'
         color_dups[bar_args['color']] += 1
         if color_dups[bar_args['color']] > 1:
             bar_args['hatch'] = hatch[color_dups[bar_args['color']] - 2]
