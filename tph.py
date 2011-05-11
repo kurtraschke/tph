@@ -26,6 +26,7 @@ for section in config.sections():
         else:
             target_date = default_target_date
         target_routes = config.get(section, 'target_routes').split(',')
+        target_routes = [route.strip() for route in target_routes]
         target_stopid = config.get(section, 'target_stopid')
         outfile = config.get(section, 'outfile')
         (results, target_stop_name) = find_service(schedule, target_date, target_routes, target_stopid)
