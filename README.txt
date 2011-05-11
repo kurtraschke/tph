@@ -29,7 +29,6 @@ for weekday and weekend service in the same run.
 tph.py requires that certain optional elements be present in the GTFS
 feed:
 * Trips must use the direction_id field
-* Headsigns must be defined in either the trip or stoptime
 
 Finally, do not be alarmed by long runtimes; transitfeed takes >5
 minutes to load large GTFS feeds. After the feed is loaded, each

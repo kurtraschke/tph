@@ -33,6 +33,11 @@ def get_name_for_route(schedule, route_id):
             else:
                 return route_id
 
+def get_last_stop_name(schedule, trip):
+    stops = trip.GetStopTimes()
+    laststoptime = stops[-1]
+    return laststoptime.stop.stop_name
+
 
 def find_service(schedule, target_date, target_routes, target_stopid):
     #TODO: it would be good to validate that the given stop and routes exist.
@@ -69,7 +74,7 @@ def find_service(schedule, target_date, target_routes, target_stopid):
                         if stoptime.stop in target_stops:
                             hour = stoptime.arrival_time.split(':')[0]
                             count[int(hour) % 24] += 1
-                            headsigns[trip.trip_headsign or stoptime.stop_headsign] += 1
+                            headsigns[trip.trip_headsign or stoptime.stop_headsign or get_last_stop_name(schedule, trip)] += 1
 
             results_temp[route.route_id] = {'route_color': route.route_color,
                                             'route_name': get_name_for_route(schedule, route.route_id),
