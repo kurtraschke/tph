@@ -39,7 +39,7 @@ def plot_service(results, target_stop_name, target_date, outfile):
     width = 0.40
 
     color_dups = Counter()
-    hatch = ["/", "O", "x", "o", ".", "*"]
+    hatch = ["/", ".", "x", "*", "+"]
 
     values_0 = np.array(np.zeros(HOURS))
     values_1 = np.array(np.zeros(HOURS))
@@ -53,7 +53,8 @@ def plot_service(results, target_stop_name, target_date, outfile):
             bar_args['edgecolor'] = '#ffffff'
         color_dups[bar_args['color']] += 1
         if color_dups[bar_args['color']] > 1:
-            bar_args['hatch'] = hatch[color_dups[bar_args['color']] - 2]
+            (hatch_dup, hatch_id) = divmod(color_dups[bar_args['color']] - 2, len(hatch))
+            bar_args['hatch'] = hatch[hatch_id] * (hatch_dup + 1)
         route_data['plot_0'] = ax.bar(pos, route_data['bins_0'], width, bottom=values_0, **bar_args)
         route_data['plot_1'] = ax.bar(pos+width, route_data['bins_1'], width, bottom=values_1, **bar_args)
 
