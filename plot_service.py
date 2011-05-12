@@ -26,6 +26,19 @@ def make_top_labels(rects, ax, total):
         ax.text(xloc, yloc, bar_text, horizontalalignment='center',
                  verticalalignment='center', color='black', weight='bold', size='x-small')
 
+def mode_string(route_types):
+    mode_vehicle_names = ['Trains', 'Trains', 'Trains', 'Buses', 'Boats', 'Cars', 'Cars', 'Trains']
+
+    if (len(set(route_types)) > 1):
+        #vehicle types differ
+        vehicle_name = 'Vehicles'
+    else:
+        try:
+            vehicle_name = mode_vehicle_names[int(route_types[0])]
+        except (IndexError, ValueError):
+            vehicle_name = 'Vehicles'
+
+    return "%s per hour" % (vehicle_name)
 
 def plot_service(results, target_stop_name, target_date, outfile):
     HOURS = 24
@@ -74,7 +87,7 @@ def plot_service(results, target_stop_name, target_date, outfile):
 
     ax.set_ylim(0, maxtph)
     ax.set_xlabel('Hour')
-    ax.set_ylabel('Vehicles per Hour')
+    ax.set_ylabel(mode_string([route['route_type'] for route in results.values()]))
     ax.set_title('Service at %s on %s' % (target_stop_name, target_date.strftime("%Y-%m-%d")))
     ax.set_yticks(np.arange(0, maxtph, 4))
     ax.set_xticks(pos+width)

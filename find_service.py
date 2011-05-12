@@ -82,6 +82,7 @@ def find_service(schedule, target_date, target_routes, target_stopid, override_h
                             headsigns[headsign] += 1
 
             results_temp[route.route_id] = {'route_color': route.route_color,
+                                            'route_type': route.route_type,
                                             'route_name': get_name_for_route(schedule, route.route_id),
                                             'headsigns_0': headsigns_0,
                                             'count_0': count_0,
