@@ -4,7 +4,7 @@ from datetime import datetime
 import ConfigParser
 import sys
 
-import transitfeed
+from gtfs import Schedule
 
 from find_service import find_service
 from plot_service import plot_service
@@ -14,10 +14,12 @@ config = ConfigParser.ConfigParser()
 config.read(sys.argv[1])
 
 default_target_date = datetime.strptime(config.get('config', 'target_date'), "%Y-%m-%d").date()
-gtfs_dir = config.get('config', 'gtfs_dir')
+if config.has_option('config', 'gtfs_db'):
+    gtfs_db = config.get('config', 'gtfs_db')
+else:
+    gtfs_db = sys.argv[2]
 
-schedule = transitfeed.Schedule()
-schedule.Load(gtfs_dir)
+schedule = Schedule(gtfs_db)
 
 for section in config.sections():
     if section != 'config':

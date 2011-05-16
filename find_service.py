@@ -1,98 +1,65 @@
-from datetime import timedelta
 from collections import Counter, OrderedDict
 
+from sqlalchemy.orm import joinedload
 
-def get_serviceperiod(schedule, service_date):
-    (result_date, periods) = schedule.GetServicePeriodsActiveEachDate(service_date,
-                                                                      service_date+timedelta(days=1))[0]
-    assert result_date == service_date
-    return [sp.service_id for sp in periods]
-
-def get_childstops(schedule, parent_stop):
-    stops = []
-    for stop in schedule.GetStopList():
-        if stop.parent_station and stop.parent_station == parent_stop.stop_id:
-            stops.append(stop)
-    return stops
-
-def get_stop_by_id(schedule, stop_id):
-    for stop in schedule.GetStopList():
-        if stop.stop_id == stop_id:
-            return stop
-
-def get_name_for_route(schedule, route_id):
-    routes = schedule.GetRouteList()
-    for route in routes:
-        if route.route_id != route_id:
-            continue
-        else:
-            if route.route_short_name != "":
-                return route.route_short_name
-            elif route.route_long_name != "":
-                return route.route_long_name
-            else:
-                return route_id
+from gtfs.entity import *
 
 def get_last_stop_name(schedule, trip):
-    stops = trip.GetStopTimes()
+    stops = trip.stop_times
     laststoptime = stops[-1]
     return laststoptime.stop.stop_name
 
 
 def find_service(schedule, target_date, target_routes, target_stopid, override_headsign=False):
     #TODO: it would be good to validate that the given stop and routes exist.
-    periods = get_serviceperiod(schedule, target_date)
+    periods = schedule.service_for_date(target_date)
 
-    target_stop = get_stop_by_id(schedule, target_stopid)
-    assert target_stop is not None
+    target_stop = Stop.query.filter_by(stop_id=target_stopid).one()
 
-    if target_stop.parent_station and target_stop.parent_station != '':
-        target_stop = get_stop_by_id(schedule, target_stop.parent_station)
+    if target_stop.parent is not None:
+        target_stop = target_stop.parent
 
-    target_stops = [target_stop] + get_childstops(schedule, target_stop)
+    target_stops = [target_stop] + target_stop.child_stations
 
     results_temp = {}
 
-    for route in schedule.GetRouteList():
-        if route.route_id in target_routes:
-            count_0 = Counter()
-            headsigns_0 = Counter()
-            count_1 = Counter()
-            headsigns_1 = Counter()
-            trips = route.trips
-            for trip in trips:
-                if trip.service_id in periods:
-                    if trip.direction_id == '0':
-                        count = count_0
-                        headsigns = headsigns_0
-                    elif trip.direction_id == '1':
-                        count = count_1
-                        headsigns = headsigns_1
+    st = StopTime.query.filter(StopTime.stop.has(Stop.stop_id.in_([stop.stop_id for stop in target_stops]))).join(Trip).join(Route).filter(Trip.service_period.has(ServicePeriod.service_id.in_([period.service_id for period in periods]))).filter(Route.route_id.in_(target_routes)).options(joinedload('trip'),joinedload('trip.route')).all()
 
-                    stoptimes = trip.GetStopTimes()
-                    for stoptime in stoptimes:
-                        if stoptime.stop in target_stops:
-                            hour = stoptime.arrival_time.split(':')[0]
-                            count[int(hour) % 24] += 1
-                            if override_headsign:
-                                headsign = get_last_stop_name(schedule, trip)
-                            else:
-                                headsign = trip.trip_headsign or stoptime.stop_headsign or \
-                                           get_last_stop_name(schedule, trip)
-                            headsigns[headsign] += 1
+    for stoptime in st:
+        route = stoptime.trip.route
+        route_id = route.route_id
 
-            results_temp[route.route_id] = {'route_color': route.route_color,
-                                            'route_type': route.route_type,
-                                            'route_name': get_name_for_route(schedule, route.route_id),
-                                            'headsigns_0': headsigns_0,
-                                            'count_0': count_0,
-                                            'bins_0': [count_0.get(x, 0) for x in range(0, 24)],
-                                            'headsigns_1': headsigns_1,
-                                            'count_1': count_1,
-                                            'bins_1': [count_1.get(x, 0) for x in range(0, 24)]}
+        if route_id not in results_temp:
+            results_temp[route_id] = {'route_color': route.route_color,
+                                      'route_type': route.route_type,
+                                      'route_name': route.route_short_name or route.route_long_name or route.route_id,
+                                      'headsigns_0': Counter(),
+                                      'count_0': Counter(),
+                                      'headsigns_1': Counter(),
+                                      'count_1': Counter()}
+
+        trip = stoptime.trip
+
+        if trip.direction_id == 0:
+            count = results_temp[route_id]['count_0']
+            headsigns = results_temp[route_id]['headsigns_0']
+        elif trip.direction_id == 1:
+            count = results_temp[route_id]['count_1']
+            headsigns = results_temp[route_id]['headsigns_1']
+
+        hour = (stoptime.arrival_time.val // 3600) % 24
+        count[hour] += 1
+        if override_headsign or (trip.trip_headsign is None and stoptime.stop_headsign is None):
+            headsign = get_last_stop_name(schedule, trip)
+        else:
+            headsign = trip.trip_headsign or stoptime.stop_headsign
+        headsigns[headsign] += 1
+
     results = OrderedDict()
 
     for route_id in target_routes:
         results[route_id] = results_temp[route_id]
+        results[route_id]['bins_0'] = [results[route_id]['count_0'].get(x, 0) for x in range(0, 24)]
+        results[route_id]['bins_1'] = [results[route_id]['count_1'].get(x, 0) for x in range(0, 24)]
 
     return (results, target_stop.stop_name)
