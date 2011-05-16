@@ -6,10 +6,11 @@ from gtfs.entity import *
 
 
 def get_last_stop_name(schedule, trip):
-    stops = trip.stop_times
-    laststoptime = stops[-1]
-    return laststoptime.stop.stop_name
-
+    q = schedule.session.query(Stop.stop_name)
+    q = q.join(StopTime)
+    q = q.filter(StopTime.trip==trip)
+    q = q.order_by(StopTime.stop_sequence.desc()).limit(1)
+    return q.scalar()
 
 def find_service(schedule, target_date, target_routes,
                  target_stopid, override_headsign=False):
