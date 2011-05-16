@@ -4,13 +4,15 @@ from sqlalchemy.orm import joinedload
 
 from gtfs.entity import *
 
+
 def get_last_stop_name(schedule, trip):
     stops = trip.stop_times
     laststoptime = stops[-1]
     return laststoptime.stop.stop_name
 
 
-def find_service(schedule, target_date, target_routes, target_stopid, override_headsign=False):
+def find_service(schedule, target_date, target_routes,
+                 target_stopid, override_headsign=False):
     #TODO: it would be good to validate that the given stop and routes exist.
     periods = schedule.service_for_date(target_date)
 
@@ -23,16 +25,26 @@ def find_service(schedule, target_date, target_routes, target_stopid, override_h
 
     results_temp = {}
 
-    st = StopTime.query.filter(StopTime.stop.has(Stop.stop_id.in_([stop.stop_id for stop in target_stops]))).join(Trip).join(Route).filter(Trip.service_period.has(ServicePeriod.service_id.in_([period.service_id for period in periods]))).filter(Route.route_id.in_(target_routes)).options(joinedload('trip'),joinedload('trip.route')).all()
+    st = StopTime.query
+    st = st.filter(StopTime.stop.has(
+        Stop.stop_id.in_([stop.stop_id for stop in target_stops])))
+    st = st.join(Trip)
+    st = st.join(Route)
+    st = st.filter(Trip.service_period.has(
+        ServicePeriod.service_id.in_(
+            [period.service_id for period in periods])))
+    st = st.filter(Route.route_id.in_(target_routes))
+    st = st.options(joinedload('trip'), joinedload('trip.route'))
 
-    for stoptime in st:
+    for stoptime in st.all():
         route = stoptime.trip.route
         route_id = route.route_id
 
         if route_id not in results_temp:
             results_temp[route_id] = {'route_color': route.route_color,
                                       'route_type': route.route_type,
-                                      'route_name': route.route_short_name or route.route_long_name or route.route_id,
+                                      'route_name': route.route_short_name or \
+                                      route.route_long_name or route.route_id,
                                       'headsigns_0': Counter(),
                                       'count_0': Counter(),
                                       'headsigns_1': Counter(),
@@ -49,7 +61,8 @@ def find_service(schedule, target_date, target_routes, target_stopid, override_h
 
         hour = (stoptime.arrival_time.val // 3600) % 24
         count[hour] += 1
-        if override_headsign or (trip.trip_headsign is None and stoptime.stop_headsign is None):
+        if override_headsign or (trip.trip_headsign is None and \
+                                 stoptime.stop_headsign is None):
             headsign = get_last_stop_name(schedule, trip)
         else:
             headsign = trip.trip_headsign or stoptime.stop_headsign
@@ -59,7 +72,8 @@ def find_service(schedule, target_date, target_routes, target_stopid, override_h
 
     for route_id in target_routes:
         results[route_id] = results_temp[route_id]
-        results[route_id]['bins_0'] = [results[route_id]['count_0'].get(x, 0) for x in range(0, 24)]
-        results[route_id]['bins_1'] = [results[route_id]['count_1'].get(x, 0) for x in range(0, 24)]
+        r = results[route_id]
+        r['bins_0'] = [r['count_0'].get(x, 0) for x in range(0, 24)]
+        r['bins_1'] = [r['count_1'].get(x, 0) for x in range(0, 24)]
 
     return (results, target_stop.stop_name)
