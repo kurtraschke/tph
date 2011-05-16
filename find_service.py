@@ -1,6 +1,6 @@
 from collections import Counter, OrderedDict
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager
 
 from gtfs.entity import *
 
@@ -34,7 +34,7 @@ def find_service(schedule, target_date, target_routes,
         ServicePeriod.service_id.in_(
             [period.service_id for period in periods])))
     st = st.filter(Route.route_id.in_(target_routes))
-    st = st.options(joinedload('trip'), joinedload('trip.route'))
+    st = st.options(contains_eager('trip'), contains_eager('trip.route'))
 
     for stoptime in st.all():
         route = stoptime.trip.route
