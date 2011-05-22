@@ -35,7 +35,8 @@ process of generating plots considerably, because the database can be
 re-used for successive invocations of tph.py.
 
 After compiling the database, create a configuration file (see
-the 'samples' directory for sample configuration files).
+the 'samples' directory for sample configuration files, and config.rst
+for documentation).
 Then, run tph.py:
 
 $ python2.7 tph.py agency.cfg <gtfs db>
@@ -47,8 +48,3 @@ the second argument to tph.py.
 Note that each route staza in the configuration file can optionally
 contain its own target_date; this may be useful for generating plots
 for weekday and weekend service in the same run.
-
-tph.py requires that certain optional elements be present
-in the GTFS feed:
-
-* Trips must use the direction_id field
