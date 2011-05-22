@@ -39,7 +39,7 @@ for section in config.sections():
         outfile = config.get(section, 'outfile')
         args = {}
         if config.has_option(section, 'direction_0_routes') and \
-               config.has_option(section, 'direction_1_routes'): 
+               config.has_option(section, 'direction_1_routes'):
             args['direction_0_routes'] = [route.strip() for route in \
                                           config.get(section,
                                                      'direction_0_routes').split(',')]
@@ -48,7 +48,7 @@ for section in config.sections():
                                                      'direction_1_routes').split(',')]
 
         if config.has_option(section, 'direction_0_terminals') and \
-               config.has_option(section, 'direction_1_terminals'): 
+               config.has_option(section, 'direction_1_terminals'):
             args['direction_0_terminals'] = [route.strip() for route in \
                                              config.get(section,
                                                         'direction_0_terminals').split(',')]
