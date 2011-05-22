@@ -1,3 +1,7 @@
+====================================
+``tph.py`` configuration file format
+====================================
+
 ``tph.py`` is driven by a configuration file which lists the plots to be generated from a GTFS feed.  This file documents the configuration file format.
 
 Core configuration
@@ -23,14 +27,14 @@ Each plot is specified in its own section in the configuration file; the name of
 
 The ``target_date`` parameter can also be given for individual plots, in which it will override the global value.
 
-If the feed doesn't use direction_id
+If the feed does not use direction_id
 ------------------------------------
 
 If the feed does not use the direction_id field for trips, there are two options, depending on the structure of the feed.
 
 * If every trip for a given route operates in the same direction, then use the ``direction_0_routes`` and ``direction_1_routes`` configuration parameters.  Both parameters take a comma-separated list of route IDs.
 
-* If trips in both directions are commingled in the same route, then use the ``direction_0_terminals`` and ``direction_1_routes`` configuration parameters.  Both parameters take a comma-separated list of destination stop IDs.
+* If trips in both directions are commingled in the same route, then use the ``direction_0_terminals`` and ``direction_1_terminals`` configuration parameters.  Both parameters take a comma-separated list of destination stop IDs.
 
 The two sets of parameters given above can be combined depending on the situation.
 
