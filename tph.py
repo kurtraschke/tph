@@ -19,7 +19,7 @@ if config.has_option('config', 'gtfs_db'):
 else:
     gtfs_db = sys.argv[2]
 
-schedule = Schedule(gtfs_db)
+schedule = Schedule(gtfs_db, echo=True)
 
 for section in config.sections():
     if section != 'config':
@@ -37,8 +37,28 @@ for section in config.sections():
         target_routes = [route.strip() for route in target_routes]
         target_stopid = config.get(section, 'target_stopid')
         outfile = config.get(section, 'outfile')
+        args = {}
+        if config.has_option(section, 'direction_0_routes') and \
+               config.has_option(section, 'direction_1_routes'): 
+            args['direction_0_routes'] = [route.strip() for route in \
+                                          config.get(section,
+                                                     'direction_0_routes').split(',')]
+            args['direction_1_routes'] = [route.strip() for route in \
+                                          config.get(section,
+                                                     'direction_1_routes').split(',')]
+
+        if config.has_option(section, 'direction_0_terminals') and \
+               config.has_option(section, 'direction_1_terminals'): 
+            args['direction_0_terminals'] = [route.strip() for route in \
+                                             config.get(section,
+                                                        'direction_0_terminals').split(',')]
+            args['direction_1_terminals'] = [route.strip() for route in \
+                                             config.get(section,
+                                                        'direction_1_terminals').split(',')]
+
         (results, target_stop_name) = find_service(schedule, target_date,
                                                    target_routes,
                                                    target_stopid,
-                                                   override_headsign)
+                                                   override_headsign,
+                                                   **args)
         plot_service(results, target_stop_name, target_date, outfile)
