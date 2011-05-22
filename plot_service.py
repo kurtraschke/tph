@@ -3,7 +3,8 @@ import textwrap
 import math
 
 import numpy as np
-from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
+from matplotlib.backends.backend_pdf import FigureCanvasPdf
+from matplotlib.backends.backend_svg import FigureCanvasSVG
 from matplotlib.figure import Figure
 
 
@@ -44,6 +45,7 @@ def mode_string(route_types):
 
     return "%s per hour" % (vehicle_name)
 
+
 def contrasting_color(input_color):
     r = int(input_color[0:2], 16)
     g = int(input_color[2:4], 16)
@@ -54,17 +56,23 @@ def contrasting_color(input_color):
     b_scale = b / 255.0
 
     if max(r_scale, g_scale, b_scale) > 0.5:
-        (new_r, new_g, new_b) = (0,0,0)
+        (new_r, new_g, new_b) = (0, 0, 0)
     else:
-        (new_r, new_g, new_b) = (255,255,255)
+        (new_r, new_g, new_b) = (255, 255, 255)
 
     return "{:02x}{:02x}{:02x}".format(new_r, new_g, new_b)
+
 
 def plot_service(results, target_stop_name, target_date, outfile):
     HOURS = 24
 
-    fig = Figure(figsize=(16, 6), dpi=300)
-    canvas = FigureCanvas(fig)
+    fig_format = outfile[-3:]
+
+    fig = Figure(figsize=(12, 6), dpi=300)
+    if fig_format == 'pdf':
+        canvas = FigureCanvasPdf(fig)
+    elif fig_format == 'svg':
+        canvas = FigureCanvasSVG(fig)
     ax = fig.add_subplot(111, xlim=(0, 24))
     fig.subplots_adjust(bottom=0.2, left=0.05, right=0.98)
 
@@ -94,8 +102,10 @@ def plot_service(results, target_stop_name, target_date, outfile):
         route_data['plot_1'] = ax.bar(pos + width, route_data['bins_1'], width,
                                       bottom=values_1, **bar_args)
 
-        make_labels(route_data['plot_0'], ax, '#' + contrasting_color(bar_args['color'][1:]))
-        make_labels(route_data['plot_1'], ax, '#' + contrasting_color(bar_args['color'][1:]))
+        make_labels(route_data['plot_0'], ax,
+                    '#' + contrasting_color(bar_args['color'][1:]))
+        make_labels(route_data['plot_1'], ax,
+                    '#' + contrasting_color(bar_args['color'][1:]))
 
         values_0 += np.array(route_data['bins_0'])
         values_1 += np.array(route_data['bins_1'])
@@ -118,7 +128,8 @@ def plot_service(results, target_stop_name, target_date, outfile):
     ax.set_xticks(pos + width)
     ax.set_xticklabels([str(i) for i in range(0, HOURS)])
     ax.legend([route_data['plot_0'][0] for route_data in results.values()],
-              [route_data['route_name'] for route_data in results.values()])
+              [route_data['route_name'] for route_data in results.values()],
+              prop={'size': 'small'}, ncol=2)
 
     headsigns_0 = set()
     headsigns_1 = set()
@@ -128,10 +139,10 @@ def plot_service(results, target_stop_name, target_date, outfile):
         headsigns_1.update(route['headsigns_1'].keys())
 
     d0 = textwrap.fill("Direction 0 is: %s" % (", ".join(headsigns_0)),
-                       170, subsequent_indent='    ')
+                       150, subsequent_indent='    ')
     d1 = textwrap.fill("Direction 1 is: %s" % (", ".join(headsigns_1)),
-                       170, subsequent_indent='    ')
+                       150, subsequent_indent='    ')
 
     fig.text(0.05, 0.05, d0 + "\n" + d1, size="small")
 
-    fig.savefig(outfile, format='pdf')
+    fig.savefig(outfile, format=fig_format)
