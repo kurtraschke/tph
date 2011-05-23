@@ -38,6 +38,11 @@ If the feed does not use the direction_id field for trips, there are two options
 
 The two sets of parameters given above can be combined depending on the situation.
 
+If the feed's direction values are invalid
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the feed contains values for direction_id, but those values are unusable—meaning that all trips, regardless of actual direction, are set to either 0 or 1, then set ``override_direction``, and follow the directions above to force a valid direction for each trip.
+
 If the feed does not use headsigns
 ----------------------------------
 

@@ -33,6 +33,10 @@ for section in config.sections():
             override_headsign = config.getboolean(section, 'override_headsign')
         else:
             override_headsign = False
+        if config.has_option(section, 'override_direction'):
+            override_direction = config.getboolean(section, 'override_direction')
+        else:
+            override_direction = False
         target_routes = config.get(section, 'target_routes').split(',')
         target_routes = [route.strip() for route in target_routes]
         target_stopid = config.get(section, 'target_stopid')
@@ -60,5 +64,6 @@ for section in config.sections():
                                                    target_routes,
                                                    target_stopid,
                                                    override_headsign,
+                                                   override_direction,
                                                    **args)
         plot_service(results, target_stop_name, target_date, outfile)
