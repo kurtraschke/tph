@@ -6,7 +6,6 @@ from gtfs.entity import *
 
 
 def get_last_stop_id(schedule, trip):
-    print get_last_stop_name(schedule, trip)
     q = schedule.session.query(StopTime.stop_id)
     q = q.filter(StopTime.trip == trip)
     q = q.order_by(StopTime.stop_sequence.desc()).limit(1)
@@ -26,7 +25,6 @@ def find_service(schedule, target_date, target_routes,
                  override_direction=False,
                  direction_0_routes=[], direction_1_routes=[],
                  direction_0_terminals=[], direction_1_terminals=[]):
-    print direction_1_terminals
     
     #TODO: it would be good to validate that the given stop and routes exist.
     periods = schedule.service_for_date(target_date)
@@ -98,7 +96,6 @@ def find_service(schedule, target_date, target_routes,
     st = st.options(contains_eager('trip'), contains_eager('trip.route'))
 
     for stoptime in st.all():
-        print stoptime
         process_stoptime(stoptime)
 
     st = StopTime.query
@@ -118,7 +115,6 @@ def find_service(schedule, target_date, target_routes,
             for trip_time in frequency.trip_times:
                 process_stoptime(exemplar_stoptime, trip_time + offset)
 
-    print results_temp
 
     results = OrderedDict()
 
