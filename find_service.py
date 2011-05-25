@@ -46,7 +46,7 @@ def find_service(schedule, target_date, target_routes,
 
     all_routes = target_routes
 
-    target_routes = set(target_routes) - set(frequency_routes)
+    stoptime_routes = set(target_routes) - set(frequency_routes)
 
     def process_stoptime(stoptime, surrogate_time=None):
         route = stoptime.trip.route
@@ -86,34 +86,36 @@ def find_service(schedule, target_date, target_routes,
             headsign = trip.trip_headsign or stoptime.stop_headsign
         headsigns[headsign] += 1
 
-    st = StopTime.query
-    st = st.filter(StopTime.stop.has(
-        Stop.stop_id.in_([stop.stop_id for stop in target_stops])))
-    st = st.join(Trip)
-    st = st.join(Route)
-    st = st.filter(Trip.service_id.in_(periods))
-    st = st.filter(Route.route_id.in_(target_routes))
-    st = st.options(contains_eager('trip'), contains_eager('trip.route'))
+    if len(stoptime_routes) > 0:
+        st = StopTime.query
+        st = st.filter(StopTime.stop.has(
+            Stop.stop_id.in_([stop.stop_id for stop in target_stops])))
+        st = st.join(Trip)
+        st = st.join(Route)
+        st = st.filter(Trip.service_id.in_(periods))
+        st = st.filter(Route.route_id.in_(target_routes))
+        st = st.options(contains_eager('trip'), contains_eager('trip.route'))
+        
+        for stoptime in st.all():
+            process_stoptime(stoptime)
 
-    for stoptime in st.all():
-        process_stoptime(stoptime)
+    if len(frequency_routes) > 0:
+        st = StopTime.query
+        st = st.filter(StopTime.stop.has(
+            Stop.stop_id.in_([stop.stop_id for stop in target_stops])))
+        st = st.join(Trip)
+        st = st.join(Route)
+        st = st.filter(Trip.service_id.in_(periods))
+        st = st.filter(Route.route_id.in_(frequency_routes))
+        st = st.options(contains_eager('trip'), contains_eager('trip.route'),
+                        eagerload('trip.frequencies'))
 
-    st = StopTime.query
-    st = st.filter(StopTime.stop.has(
-        Stop.stop_id.in_([stop.stop_id for stop in target_stops])))
-    st = st.join(Trip)
-    st = st.join(Route)
-    st = st.filter(Trip.service_id.in_(periods))
-    st = st.filter(Route.route_id.in_(frequency_routes))
-    st = st.options(contains_eager('trip'), contains_eager('trip.route'),
-                    eagerload('trip.frequencies'))
-
-    for exemplar_stoptime in st.all():
-        frequencies = exemplar_stoptime.trip.frequencies
-        offset = exemplar_stoptime.elapsed_time
-        for frequency in frequencies:
-            for trip_time in frequency.trip_times:
-                process_stoptime(exemplar_stoptime, trip_time + offset)
+        for exemplar_stoptime in st.all():
+            frequencies = exemplar_stoptime.trip.frequencies
+            offset = exemplar_stoptime.elapsed_time
+            for frequency in frequencies:
+                for trip_time in frequency.trip_times:
+                    process_stoptime(exemplar_stoptime, trip_time + offset)
 
 
     results = OrderedDict()
