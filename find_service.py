@@ -25,7 +25,7 @@ def find_service(schedule, target_date, target_routes,
                  override_direction=False,
                  direction_0_routes=[], direction_1_routes=[],
                  direction_0_terminals=[], direction_1_terminals=[]):
-    
+
     #TODO: it would be good to validate that the given stop and routes exist.
     periods = schedule.service_for_date(target_date)
 
@@ -95,7 +95,7 @@ def find_service(schedule, target_date, target_routes,
         st = st.filter(Trip.service_id.in_(periods))
         st = st.filter(Route.route_id.in_(target_routes))
         st = st.options(contains_eager('trip'), contains_eager('trip.route'))
-        
+
         for stoptime in st.all():
             process_stoptime(stoptime)
 
@@ -121,6 +121,8 @@ def find_service(schedule, target_date, target_routes,
     results = OrderedDict()
 
     for route_id in all_routes:
+        if route_id not in results_temp:
+            raise Exception("No data generated for route_id %s. Does it exist in the feed?" % route_id)
         results[route_id] = results_temp[route_id]
         r = results[route_id]
         r['bins_0'] = [r['count_0'].get(x, 0) for x in range(0, 24)]
