@@ -68,12 +68,12 @@ def find_service(schedule, target_date, target_routes,
         trip = stoptime.trip
 
         if route_id in direction_0_routes or \
-               get_last_stop_id(schedule, trip) in direction_0_terminals or \
+               (len(direction_0_terminals) > 0 and get_last_stop_id(schedule, trip) in direction_0_terminals) or \
                (trip.direction_id == 0 and not override_direction):
             count = results_temp[route_id]['count_0']
             headsigns = results_temp[route_id]['headsigns_0']
         elif route_id in direction_1_routes or \
-                 get_last_stop_id(schedule, trip) in direction_1_terminals or \
+                 (len(direction_1_terminals) > 0 and get_last_stop_id(schedule, trip) in direction_1_terminals) or \
                  (trip.direction_id == 1 and not override_direction):
             count = results_temp[route_id]['count_1']
             headsigns = results_temp[route_id]['headsigns_1']
