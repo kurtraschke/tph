@@ -43,6 +43,9 @@ def find_service(schedule, target_date, intervals, target_routes,
     #TODO: it would be good to validate that the given stop and routes exist.
     periods = schedule.service_for_date(target_date)
 
+    if len(periods) == 0:
+        raise DateNotFoundError(target_date)
+
     # combine stop with its parent (if any) and children of parent
     target_stop = Stop.query.filter_by(stop_id=target_stopid).one()
     if target_stop.parent is not None:
@@ -84,17 +87,17 @@ def find_service(schedule, target_date, intervals, target_routes,
         trip = stoptime.trip
 
         if route_id in direction_0_routes or \
-               get_last_stop_id(schedule, trip) in direction_0_terminals or \
+               (len(direction_0_terminals) > 0 and get_last_stop_id(schedule, trip) in direction_0_terminals) or \
                (trip.direction_id == 0 and not override_direction):
             count = results_temp[route_id]['count_0']
             headsigns = results_temp[route_id]['headsigns_0']
         elif route_id in direction_1_routes or \
-                 get_last_stop_id(schedule, trip) in direction_1_terminals or \
+                 (len(direction_1_terminals) > 0 and get_last_stop_id(schedule, trip) in direction_1_terminals) or \
                  (trip.direction_id == 1 and not override_direction):
             count = results_temp[route_id]['count_1']
             headsigns = results_temp[route_id]['headsigns_1']
         else:
-            raise Exception("No direction available for trip %s on route %s." % (trip.trip_id, route_id))
+            raise NoDirectionFoundError(trip.trip_id, route_id)
 
         intervalidx = find_interval(intervals, (surrogate_time or stoptime.arrival_time.val))
         if intervalidx != -1:
@@ -155,7 +158,7 @@ def find_service(schedule, target_date, intervals, target_routes,
     # combine routes over directions and bin over intervals
     for route_id in all_routes:
         if route_id not in results_temp:
-            raise Exception("No data generated for route_id %s. Does it exist in the feed?" % route_id)
+            raise RouteNotFoundError(route_id)
         results[route_id] = results_temp[route_id]
         r = results[route_id]
         #r['bins_0'] = [r['count_0'].get(x, 0) for x in range(0, 24)]
@@ -169,3 +172,22 @@ def find_service(schedule, target_date, intervals, target_routes,
             worstspacing[ival] = max(intervallist[ival])
 
     return (results, target_stop.stop_name, spacing, worstspacing)
+
+class DateNotFoundError(Exception):
+    def __init__(self, date):
+        self.date = date
+    def __str__(self):
+        return "No service periods found for target date %s" % self.date
+
+class RouteNotFoundError(Exception):
+    def __init__(self, route):
+        self.route = route
+    def __str__(self):
+        return "No data generated for route %s" % self.route
+
+class NoDirectionFoundError(Exception):
+    def __init__(self, trip_id, route_id):
+        self.trip_id = trip_id
+        self.route_id = route_id
+    def __str__(self):
+        return "No direction available for trip %s on route %s." % (self.trip_id, self.route_id)
