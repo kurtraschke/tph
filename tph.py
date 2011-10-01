@@ -6,7 +6,7 @@ from gtfs import Schedule
 
 from find_service import find_service
 from plot_service import plot_service
-
+from plot_spacing import plot_spacing
 
 config = ConfigParser.ConfigParser()
 config.read(sys.argv[1])
@@ -14,10 +14,18 @@ config.read(sys.argv[1])
 default_target_date = datetime.strptime(config.get('config',
                                                    'target_date'),
                                         "%Y-%m-%d").date()
+default_intervals = range(0,25)                                        
+                                        
 if config.has_option('config', 'gtfs_db'):
     gtfs_db = config.get('config', 'gtfs_db')
 else:
     gtfs_db = sys.argv[2]
+
+# TODO: currently intervals can't wrap around midnight -- allow this 
+if config.has_option('config','intervals'):
+    intervals = eval(config.get('config', 'intervals'), {}, {})
+else:
+    intervals = default_intervals
 
 schedule = Schedule(gtfs_db, echo=True)
 
@@ -60,10 +68,14 @@ for section in config.sections():
                                              config.get(section,
                                                         'direction_1_terminals').split(',')]
 
-        (results, target_stop_name) = find_service(schedule, target_date,
+        (results, target_stop_name, spacing, worstspacing) = find_service(schedule, target_date, intervals,
                                                    target_routes,
                                                    target_stopid,
                                                    override_headsign,
                                                    override_direction,
                                                    **args)
-        plot_service(results, target_stop_name, target_date, outfile)
+        
+        plot_service(results, target_stop_name, target_date, intervals, outfile)
+
+        plot_spacing(intervals,spacing,worstspacing)
+        

@@ -63,9 +63,12 @@ def contrasting_color(input_color):
     return "{:02x}{:02x}{:02x}".format(new_r, new_g, new_b)
 
 
-def plot_service(results, target_stop_name, target_date, outfile):
-    HOURS = 24
-
+def plot_service(results, target_stop_name, target_date, intervals, outfile):
+    maxinterval = len(intervals)-1
+    interval_durations = np.array(np.zeros(maxinterval))
+    for i in range(maxinterval):
+        interval_durations[i] = intervals[i+1] - intervals[i] 
+    
     fig_format = outfile[-3:]
 
     fig = Figure(figsize=(12, 6), dpi=300)
@@ -73,17 +76,17 @@ def plot_service(results, target_stop_name, target_date, outfile):
         canvas = FigureCanvasPdf(fig)
     elif fig_format == 'svg':
         canvas = FigureCanvasSVG(fig)
-    ax = fig.add_subplot(111, xlim=(0, 24))
+    ax = fig.add_subplot(111, xlim=(0, maxinterval))
     fig.subplots_adjust(bottom=0.2, left=0.05, right=0.98)
 
-    pos = np.arange(HOURS)
+    pos = np.arange(maxinterval)
     width = 0.40
 
     color_dups = Counter()
     hatch = ["/", ".", "x", "*", "+"]
 
-    values_0 = np.array(np.zeros(HOURS))
-    values_1 = np.array(np.zeros(HOURS))
+    values_0 = np.array(np.zeros(maxinterval))
+    values_1 = np.array(np.zeros(maxinterval))
 
     for route_id, route_data in results.items():
         bar_args = {}
@@ -97,19 +100,24 @@ def plot_service(results, target_stop_name, target_date, outfile):
             (hatch_dup, hatch_id) = divmod(color_dups[bar_args['color']] - 2,
                                            len(hatch))
             bar_args['hatch'] = hatch[hatch_id] * (hatch_dup + 1)
-        route_data['plot_0'] = ax.bar(pos, route_data['bins_0'], width,
-                                      bottom=values_0, **bar_args)
-        route_data['plot_1'] = ax.bar(pos + width, route_data['bins_1'], width,
-                                      bottom=values_1, **bar_args)
 
+        # MSC something's wrong with variable durations?
+        norm_bins_0 = np.array(route_data['bins_0']) / interval_durations
+        norm_bins_1 = np.array(route_data['bins_1']) / interval_durations
+        
+        route_data['plot_0'] = ax.bar(pos, norm_bins_0, width,
+                                      bottom=values_0, **bar_args)
+        route_data['plot_1'] = ax.bar(pos + width, norm_bins_1, width,
+                                      bottom=values_1, **bar_args)
+        
         make_labels(route_data['plot_0'], ax,
                     '#' + contrasting_color(bar_args['color'][1:]))
         make_labels(route_data['plot_1'], ax,
                     '#' + contrasting_color(bar_args['color'][1:]))
 
-        values_0 += np.array(route_data['bins_0'])
-        values_1 += np.array(route_data['bins_1'])
-
+        values_0 += norm_bins_0
+        values_1 += norm_bins_1
+    
     if len(results) > 1:
         last_route_data = results.values()[-1]
         make_top_labels(last_route_data['plot_0'], ax, values_0)
@@ -117,16 +125,16 @@ def plot_service(results, target_stop_name, target_date, outfile):
 
     maxtph = (math.ceil(max(max(values_0),
                             max(values_1)) / 10.0) * 10) + 5
-
+    
     ax.set_ylim(0, maxtph)
-    ax.set_xlabel('Hour')
+    ax.set_xlabel('Period')
     ax.set_ylabel(mode_string(
         [route['route_type'] for route in results.values()]))
     ax.set_title('Service at %s on %s' % (target_stop_name,
                                           target_date.strftime("%Y-%m-%d")))
     ax.set_yticks(np.arange(0, maxtph, 4))
     ax.set_xticks(pos + width)
-    ax.set_xticklabels([str(i) for i in range(0, HOURS)])
+    ax.set_xticklabels([str(i) for i in intervals[0:maxinterval]]) #for i in range(0, len(intervals))
     ax.legend([route_data['plot_0'][0] for route_data in results.values()],
               [route_data['route_name'] for route_data in results.values()],
               prop={'size': 'small'}, ncol=2)

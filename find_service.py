@@ -4,6 +4,9 @@ from sqlalchemy.orm import contains_eager, eagerload
 
 from gtfs.entity import *
 
+from numpy import median, inf
+
+import math
 
 def get_last_stop_id(schedule, trip):
     q = schedule.session.query(StopTime.stop_id)
@@ -19,8 +22,19 @@ def get_last_stop_name(schedule, trip):
     q = q.order_by(StopTime.stop_sequence.desc()).limit(1)
     return q.scalar()
 
+def find_interval(intervals, val):
+    # returns index of interval corresponding to time value passed in. 
+    # returns -1 for times before first interval or after last interval
+    arrival_hours = math.fmod(val / 3600., 24.)
+    
+    intervalidx = -1
+    for j in range(len(intervals)-1):
+        if (intervals[j] <= arrival_hours < intervals[j+1]):
+            intervalidx = j
+            break
+    return intervalidx
 
-def find_service(schedule, target_date, target_routes,
+def find_service(schedule, target_date, intervals, target_routes,
                  target_stopid, override_headsign=False,
                  override_direction=False,
                  direction_0_routes=[], direction_1_routes=[],
@@ -29,25 +43,30 @@ def find_service(schedule, target_date, target_routes,
     #TODO: it would be good to validate that the given stop and routes exist.
     periods = schedule.service_for_date(target_date)
 
+    # combine stop with its parent (if any) and children of parent
     target_stop = Stop.query.filter_by(stop_id=target_stopid).one()
-
     if target_stop.parent is not None:
         target_stop = target_stop.parent
-
     target_stops = [target_stop] + target_stop.child_stations
 
-    results_temp = {}
-
+    # identify which routes use frequency, and which use stoptimes
     frequency_routes = []
-
     for route_id in target_routes:
         if Trip.query.filter(Trip.route_id == route_id).first().uses_frequency:
             frequency_routes.append(route_id)
-
     all_routes = target_routes
-
     stoptime_routes = set(target_routes) - set(frequency_routes)
 
+    # initialize results tables
+    results_temp = {}
+    intervallist = []
+    for i in range(len(intervals)):
+        intervallist.append([])
+    spacing = [inf] * len(intervals)
+    worstspacing = [inf] * len(intervals)
+    laststval = -1;
+    
+    # process a stoptime, storing data for its associated route in counters headsigns and count
     def process_stoptime(stoptime, surrogate_time=None):
         route = stoptime.trip.route
         route_id = route.route_id
@@ -77,15 +96,17 @@ def find_service(schedule, target_date, target_routes,
         else:
             raise Exception("No direction available for trip %s on route %s." % (trip.trip_id, route_id))
 
-        hour = ((surrogate_time or stoptime.arrival_time.val) // 3600) % 24
-        count[hour] += 1
-        if override_headsign or (trip.trip_headsign is None and \
-                                 stoptime.stop_headsign is None):
-            headsign = get_last_stop_name(schedule, trip)
-        else:
-            headsign = trip.trip_headsign or stoptime.stop_headsign
-        headsigns[headsign] += 1
+        intervalidx = find_interval(intervals, (surrogate_time or stoptime.arrival_time.val))
+        if intervalidx != -1:
+            count[intervalidx] += 1
+            if override_headsign or (trip.trip_headsign is None and \
+                                     stoptime.stop_headsign is None):
+                headsign = get_last_stop_name(schedule, trip)
+            else:
+                headsign = trip.trip_headsign or stoptime.stop_headsign
+            headsigns[headsign] += 1
 
+    # iterate over stoptime routes           
     if len(stoptime_routes) > 0:
         st = StopTime.query
         st = st.filter(StopTime.stop.has(
@@ -98,7 +119,16 @@ def find_service(schedule, target_date, target_routes,
 
         for stoptime in st.all():
             process_stoptime(stoptime)
+            
+            # assuming stoptimes are iterated in order
+            # skip 1st when computing interval since last stoptime
+            if laststval != -1:
+                intervalidx = find_interval(intervals,stoptime.arrival_time.val)
+                if intervalidx != -1:
+                    intervallist[intervalidx].append((stoptime.arrival_time.val - laststval) / 60)
+            laststval = stoptime.arrival_time.val 
 
+    # iterate over frequency routes           
     if len(frequency_routes) > 0:
         st = StopTime.query
         st = st.filter(StopTime.stop.has(
@@ -117,15 +147,25 @@ def find_service(schedule, target_date, target_routes,
                 for trip_time in frequency.trip_times:
                     process_stoptime(exemplar_stoptime, trip_time + offset)
 
+                    intervalidx = find_interval(intervals,trip_time + offset)
+                    intervallist[intervalidx].append(offset/60)
 
     results = OrderedDict()
 
+    # combine routes over directions and bin over intervals
     for route_id in all_routes:
         if route_id not in results_temp:
             raise Exception("No data generated for route_id %s. Does it exist in the feed?" % route_id)
         results[route_id] = results_temp[route_id]
         r = results[route_id]
-        r['bins_0'] = [r['count_0'].get(x, 0) for x in range(0, 24)]
-        r['bins_1'] = [r['count_1'].get(x, 0) for x in range(0, 24)]
+        #r['bins_0'] = [r['count_0'].get(x, 0) for x in range(0, 24)]
+        #r['bins_1'] = [r['count_1'].get(x, 0) for x in range(0, 24)]
+        r['bins_0'] = [r['count_0'].get(x, 0) for x in range(len(intervals)-1)]
+        r['bins_1'] = [r['count_1'].get(x, 0) for x in range(len(intervals)-1)]
 
-    return (results, target_stop.stop_name)
+    for ival in range(len(intervallist)):
+        if len(intervallist[ival]) > 0:
+            spacing[ival] = median(intervallist[ival])
+            worstspacing[ival] = max(intervallist[ival])
+
+    return (results, target_stop.stop_name, spacing, worstspacing)
