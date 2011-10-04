@@ -14,14 +14,14 @@ config.read(sys.argv[1])
 default_target_date = datetime.strptime(config.get('config',
                                                    'target_date'),
                                         "%Y-%m-%d").date()
-default_intervals = range(0,25)                                        
-                                        
+default_intervals = range(0, 25)
+
 if config.has_option('config', 'gtfs_db'):
     gtfs_db = config.get('config', 'gtfs_db')
 else:
     gtfs_db = sys.argv[2]
 
-# TODO: currently intervals can't wrap around midnight -- allow this 
+# TODO: currently intervals can't wrap around midnight -- allow this
 if config.has_option('config','intervals'):
     intervals = eval(config.get('config', 'intervals'), {}, {})
 else:
@@ -74,8 +74,6 @@ for section in config.sections():
                                                    override_headsign,
                                                    override_direction,
                                                    **args)
-        
-        plot_service(results, target_stop_name, target_date, intervals, outfile)
 
-        plot_spacing(intervals,spacing,worstspacing)
-        
+        plot_service(results, target_stop_name, target_date, intervals, outfile)
+        plot_spacing(intervals, spacing, worstspacing)

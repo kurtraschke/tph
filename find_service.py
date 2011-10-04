@@ -1,12 +1,10 @@
+import math
 from collections import Counter, OrderedDict
 
+from numpy import median, inf
 from sqlalchemy.orm import contains_eager, eagerload
 
 from gtfs.entity import *
-
-from numpy import median, inf
-
-import math
 
 def get_last_stop_id(schedule, trip):
     q = schedule.session.query(StopTime.stop_id)
@@ -67,7 +65,7 @@ def find_service(schedule, target_date, intervals, target_routes,
         intervallist.append([])
     spacing = [inf] * len(intervals)
     worstspacing = [inf] * len(intervals)
-    laststval = -1;
+    laststval = -1
     
     # process a stoptime, storing data for its associated route in counters headsigns and count
     def process_stoptime(stoptime, surrogate_time=None):
@@ -126,7 +124,7 @@ def find_service(schedule, target_date, intervals, target_routes,
             # assuming stoptimes are iterated in order
             # skip 1st when computing interval since last stoptime
             if laststval != -1:
-                intervalidx = find_interval(intervals,stoptime.arrival_time.val)
+                intervalidx = find_interval(intervals, stoptime.arrival_time.val)
                 if intervalidx != -1:
                     intervallist[intervalidx].append((stoptime.arrival_time.val - laststval) / 60)
             laststval = stoptime.arrival_time.val 
@@ -150,8 +148,8 @@ def find_service(schedule, target_date, intervals, target_routes,
                 for trip_time in frequency.trip_times:
                     process_stoptime(exemplar_stoptime, trip_time + offset)
 
-                    intervalidx = find_interval(intervals,trip_time + offset)
-                    intervallist[intervalidx].append(offset/60)
+                    intervalidx = find_interval(intervals, trip_time + offset)
+                    intervallist[intervalidx].append(offset / 60)
 
     results = OrderedDict()
 
@@ -161,10 +159,8 @@ def find_service(schedule, target_date, intervals, target_routes,
             raise RouteNotFoundError(route_id)
         results[route_id] = results_temp[route_id]
         r = results[route_id]
-        #r['bins_0'] = [r['count_0'].get(x, 0) for x in range(0, 24)]
-        #r['bins_1'] = [r['count_1'].get(x, 0) for x in range(0, 24)]
-        r['bins_0'] = [r['count_0'].get(x, 0) for x in range(len(intervals)-1)]
-        r['bins_1'] = [r['count_1'].get(x, 0) for x in range(len(intervals)-1)]
+        r['bins_0'] = [r['count_0'].get(x, 0) for x in range(len(intervals) - 1)]
+        r['bins_1'] = [r['count_1'].get(x, 0) for x in range(len(intervals) - 1)]
 
     for ival in range(len(intervallist)):
         if len(intervallist[ival]) > 0:
