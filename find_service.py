@@ -21,10 +21,10 @@ def get_last_stop_name(schedule, trip):
     return q.scalar()
 
 def find_interval(intervals, val):
-    # returns index of interval corresponding to time value passed in. 
+    # returns index of interval corresponding to time value passed in.
     # returns -1 for times before first interval or after last interval
     arrival_hours = math.fmod(val / 3600., 24.)
-    
+
     intervalidx = -1
     for j in range(len(intervals)-1):
         if (intervals[j] <= arrival_hours < intervals[j+1]):
@@ -66,7 +66,7 @@ def find_service(schedule, target_date, intervals, target_routes,
     spacing = [inf] * len(intervals)
     worstspacing = [inf] * len(intervals)
     laststval = -1
-    
+
     # process a stoptime, storing data for its associated route in counters headsigns and count
     def process_stoptime(stoptime, surrogate_time=None):
         route = stoptime.trip.route
@@ -107,7 +107,7 @@ def find_service(schedule, target_date, intervals, target_routes,
                 headsign = trip.trip_headsign or stoptime.stop_headsign
             headsigns[headsign] += 1
 
-    # iterate over stoptime routes           
+    # iterate over stoptime routes
     if len(stoptime_routes) > 0:
         st = StopTime.query
         st = st.filter(StopTime.stop.has(
@@ -120,16 +120,16 @@ def find_service(schedule, target_date, intervals, target_routes,
 
         for stoptime in st.all():
             process_stoptime(stoptime)
-            
+
             # assuming stoptimes are iterated in order
             # skip 1st when computing interval since last stoptime
             if laststval != -1:
                 intervalidx = find_interval(intervals, stoptime.arrival_time.val)
                 if intervalidx != -1:
                     intervallist[intervalidx].append((stoptime.arrival_time.val - laststval) / 60)
-            laststval = stoptime.arrival_time.val 
+            laststval = stoptime.arrival_time.val
 
-    # iterate over frequency routes           
+    # iterate over frequency routes
     if len(frequency_routes) > 0:
         st = StopTime.query
         st = st.filter(StopTime.stop.has(
