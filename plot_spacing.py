@@ -1,17 +1,8 @@
 import math
 
 def hour_to_time(hour):
-    hh = str(int(math.floor(hour)))
-    if (len(hh) < 2):
-        hh = ' ' + hh
+    return "%2i:%02i" % (math.floor(hour), (hour - math.floor(hour)) * 60)
 
-    mm = str(int((hour - math.floor(hour)) * 60))
-    if (len(mm) < 2): 
-        mm = '0' + mm
-    
-    time = hh + ':' + mm
-    
-    return time
 
 def plot_spacing(intervals, spacing, worstspacing):
     print 'Service period -  Spacing'
