@@ -117,6 +117,7 @@ def find_service(schedule, target_date, intervals, target_routes,
         st = st.filter(Trip.service_id.in_(periods))
         st = st.filter(Route.route_id.in_(target_routes))
         st = st.options(contains_eager('trip'), contains_eager('trip.route'))
+        st = st.order_by(StopTime.arrival_time.asc())
 
         for stoptime in st.all():
             process_stoptime(stoptime)
@@ -140,6 +141,7 @@ def find_service(schedule, target_date, intervals, target_routes,
         st = st.filter(Route.route_id.in_(frequency_routes))
         st = st.options(contains_eager('trip'), contains_eager('trip.route'),
                         eagerload('trip.frequencies'))
+        st = st.order_by(StopTime.arrival_time.asc())
 
         for exemplar_stoptime in st.all():
             frequencies = exemplar_stoptime.trip.frequencies
